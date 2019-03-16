@@ -10,10 +10,10 @@ namespace BS_Utils.Gameplay
 {
     public class ScoreSubmission
     {
-        internal static bool disabled = false;
-        internal static bool prolongedDisable = false;
-        internal static List<String> ModList { get; set; } = new List<String>(0);
-        internal static string ModString
+        public static bool Disabled { get { return disabled; } }
+        public static bool ProlongedDisabled { get { return prolongedDisable; } }
+        public static bool eventSubscribed = false;
+        public static string ModString
         {
             get
             {
@@ -27,13 +27,9 @@ namespace BS_Utils.Gameplay
                 }
                 return value;
             }
-            set
-            {
-            }
 
         }
-        internal static List<String> ProlongedModList { get; set; } = new List<String>(0);
-        internal static string ProlongedModString
+        public static string ProlongedModString
         {
             get
             {
@@ -47,11 +43,14 @@ namespace BS_Utils.Gameplay
                 }
                 return value;
             }
-            set
-            {
-            }
 
         }
+
+        internal static bool disabled = false;
+        internal static bool prolongedDisable = false;
+        internal static List<String> ModList { get; set; } = new List<String>(0);
+        internal static List<String> ProlongedModList { get; set; } = new List<String>(0);
+
 
         public static void DisableSubmission(string mod)
         {
@@ -60,13 +59,12 @@ namespace BS_Utils.Gameplay
                 Plugin.ApplyHarmonyPatches();
                 disabled = true;
                 ModList.Clear();
-
-                if (Plugin.LevelData == null)
+                if(!eventSubscribed)
                 {
-                    Plugin.LevelData = Resources.FindObjectsOfTypeAll<StandardLevelSceneSetupDataSO>()?.FirstOrDefault();
-                    if (Plugin.LevelData != null)
-                        Plugin.LevelData.didFinishEvent += LevelData_didFinishEvent;
+                Plugin.LevelDidFinishEvent += LevelData_didFinishEvent;
+                    eventSubscribed = true;
                 }
+
 
             }
 
@@ -75,7 +73,7 @@ namespace BS_Utils.Gameplay
 
         }
 
-        private static void LevelData_didFinishEvent(StandardLevelSceneSetupDataSO arg1, LevelCompletionResults arg2)
+        private static void LevelData_didFinishEvent(StandardLevelScenesTransitionSetupDataSO arg1, LevelCompletionResults arg2)
         {
             switch (arg2.levelEndStateType)
             {
@@ -92,7 +90,8 @@ namespace BS_Utils.Gameplay
                     ModList.Clear();
                     break;
             }
-
+            Plugin.LevelDidFinishEvent -= LevelData_didFinishEvent;
+            eventSubscribed = false;
 
         }
 

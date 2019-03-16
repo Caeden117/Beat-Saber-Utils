@@ -8,7 +8,7 @@ namespace BS_Utils.Gameplay
 {
     public class Gamemode
     {
-        internal static BeatmapCharacteristicSelectionViewController CharacteristicSelectionViewController;
+        internal static BeatmapCharacteristicSegmentedControlController CharacteristicSelectionViewController;
         internal static SoloFreePlayFlowCoordinator SoloFreePlayFlowCoordinator;
         internal static PartyFreePlayFlowCoordinator PartyFreePlayFlowCoordinator;
         internal static MainMenuViewController MainMenuViewController;
@@ -16,26 +16,24 @@ namespace BS_Utils.Gameplay
         public static string GameMode { get; private set; } = "Standard";
         public static bool IsIsolatedLevel { get; internal set; } = false;
         public static string IsolatingMod { get; internal set; } = "";
-
         public static void Init()
         {
-            if (CharacteristicSelectionViewController != null)
-            {
-            CharacteristicSelectionViewController = Resources.FindObjectsOfTypeAll<BeatmapCharacteristicSelectionViewController>().FirstOrDefault();
-            if (CharacteristicSelectionViewController == null)
-            {
-                Utilities.Logger.Log("Characteristic View Controller null");
-                return;
-            }
-            CharacteristicSelectionViewController.didSelectBeatmapCharacteristicEvent += CharacteristicSelectionViewController_didSelectBeatmapCharacteristicEvent;
-            }
+            Plugin.ApplyHarmonyPatches();
             if (MainMenuViewController == null)
             {
                 SoloFreePlayFlowCoordinator = Resources.FindObjectsOfTypeAll<SoloFreePlayFlowCoordinator>().FirstOrDefault();
-            PartyFreePlayFlowCoordinator = Resources.FindObjectsOfTypeAll<PartyFreePlayFlowCoordinator>().FirstOrDefault();
-            MainMenuViewController = Resources.FindObjectsOfTypeAll<MainMenuViewController>().FirstOrDefault();
+                PartyFreePlayFlowCoordinator = Resources.FindObjectsOfTypeAll<PartyFreePlayFlowCoordinator>().FirstOrDefault();
+                MainMenuViewController = Resources.FindObjectsOfTypeAll<MainMenuViewController>().FirstOrDefault();
                 if (MainMenuViewController == null) return;
                 MainMenuViewController.didFinishEvent += MainMenuViewController_didFinishEvent;
+                
+                if (CharacteristicSelectionViewController == null)
+                {
+                    CharacteristicSelectionViewController = Resources.FindObjectsOfTypeAll<BeatmapCharacteristicSegmentedControlController>().FirstOrDefault();
+                    if (CharacteristicSelectionViewController != null)
+                        CharacteristicSelectionViewController.didSelectBeatmapCharacteristicEvent += CharacteristicSelectionViewController_didSelectBeatmapCharacteristicEvent;
+                }
+                
             }
         }
 
@@ -47,11 +45,16 @@ namespace BS_Utils.Gameplay
                 IsPartyActive = false;
         }
 
-        private static void CharacteristicSelectionViewController_didSelectBeatmapCharacteristicEvent(BeatmapCharacteristicSelectionViewController arg1, BeatmapCharacteristicSO arg2)
+        internal static void CharacteristicSelectionViewController_didSelectBeatmapCharacteristicEvent(BeatmapCharacteristicSegmentedControlController arg1, BeatmapCharacteristicSO arg2)
         {
+        //    Utilities.Logger.Log("Prev: " + GameMode + "    New: " + arg2.characteristicName);
             GameMode = arg2.characteristicName;
         }
 
+        internal static void ResetGameMode()
+        {
+            GameMode = "Standard";
+        }
         public static void NextLevelIsIsolated(string modName)
         {
             Plugin.ApplyHarmonyPatches();
@@ -59,7 +62,12 @@ namespace BS_Utils.Gameplay
             IsIsolatedLevel = true;
             Utilities.Logger.Log($"Isolated level being started by {modName}");
             IsolatingMod = modName;
+
         }
 
+        private static void SceneManager_activeSceneChanged(UnityEngine.SceneManagement.Scene oldScene, UnityEngine.SceneManagement.Scene newScene)
+        {
+
+        }
     }
 }

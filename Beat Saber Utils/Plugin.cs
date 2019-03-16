@@ -15,25 +15,31 @@ namespace BS_Utils
     public class Plugin : IPlugin
     {
         public string Name => "Beat Saber Utils";
-        public string Version => "1.1.4";
+        public string Version => "1.2.1";
         internal static bool patched = false;
         internal static HarmonyInstance harmony;
-        internal static StandardLevelSceneSetupDataSO LevelData;
+        public static Gameplay.LevelData LevelData = new Gameplay.LevelData();
+        public delegate void LevelDidFinish(StandardLevelScenesTransitionSetupDataSO levelScenesTransitionSetupDataSO, LevelCompletionResults levelCompletionResults);
+        public static event LevelDidFinish LevelDidFinishEvent;
         public void OnApplicationStart()
         {
             SceneManager.activeSceneChanged += SceneManagerOnActiveSceneChanged;
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
 
             //Create Harmony Instance
-            harmony = HarmonyInstance.Create("com.kyle1413.BeatSaber.GamePlayModifiersPlus");
+            harmony = HarmonyInstance.Create("com.kyle1413.BeatSaber.BS-Utils");
 
         }
 
         private void SceneManagerOnActiveSceneChanged(Scene oldScene, Scene newScene)
         {
-
-
-
+            if (newScene.name == "MenuCore")
+            {
+                Utilities.Logger.Log("Removing Isolated Level");
+                Gameplay.Gamemode.IsIsolatedLevel = false;
+                Gameplay.Gamemode.IsolatingMod = "";
+                LevelData.Clear();
+            }
         }
 
         private void SceneManager_sceneLoaded(Scene scene, LoadSceneMode arg1)
@@ -66,12 +72,16 @@ namespace BS_Utils
         {
         }
 
-
+        internal static void TriggerLevelFinishEvent(StandardLevelScenesTransitionSetupDataSO levelScenesTransitionSetupDataSO, LevelCompletionResults levelCompletionResults)
+        {
+            LevelDidFinishEvent?.Invoke(levelScenesTransitionSetupDataSO, levelCompletionResults);
+        }
         internal static void ApplyHarmonyPatches()
         {
             if (patched) return;
             try
             {
+                Utilities.Logger.Log("Applying Harmony Patches");
                 harmony.PatchAll(System.Reflection.Assembly.GetExecutingAssembly());
                 patched = true;
             }
